@@ -36,12 +36,12 @@ def to_multichannel(i):
     i = i[:,:,0]
     return np.stack((i,i,i), axis=2)
         
-def display_images(outputs, inputs=None, gt=None, is_colormap=True, is_rescale=True):
+def display_images(outputs, inputs=None, gt=None, is_colormap=True, is_rescale=True, cmap="plasma"):
     import matplotlib.pyplot as plt
     import skimage
     from skimage.transform import resize
 
-    plasma = plt.get_cmap('plasma')
+    plasma = plt.get_cmap(cmap)
 
     shape = (outputs[0].shape[0], outputs[0].shape[1], 3)
     
@@ -76,8 +76,31 @@ def display_images(outputs, inputs=None, gt=None, is_colormap=True, is_rescale=T
     
     return skimage.util.montage(all_images, multichannel=True, fill=(0,0,0))
 
-def save_images(filename, outputs, inputs=None, gt=None, is_colormap=True, is_rescale=False):
-    montage =  display_images(outputs, inputs, is_colormap, is_rescale)
+def save_each_depth_map(outputs, out_fnames, is_colormap=True, is_rescale=True,
+    zipf=None, out_prefix=""):
+    import matplotlib.pyplot as plt
+    from io import BytesIO
+
+    plasma = plt.get_cmap('gray')
+    
+    for i in range(outputs.shape[0]):
+        if is_colormap:
+            rescaled = outputs[i][:,:,0]
+            if is_rescale:
+                rescaled = rescaled - np.min(rescaled)
+                rescaled = rescaled / np.max(rescaled)
+            gray_img = plasma(rescaled)[:,:,:3]
+            depth_map = Image.fromarray(
+                np.uint8(gray_img*255)).convert("L").resize((224,224))
+            if zipf:
+                with BytesIO() as buf:
+                    depth_map.save(buf, format="JPEG")
+                    zipf.writestr(f"fg_bg_depth/{out_prefix}{out_fnames[i]}", buf.getvalue())
+            else:
+                depth_map.save(f"/content/{out_fnames[i]}")
+
+def save_images(filename, outputs, inputs=None, gt=None, is_colormap=True, is_rescale=False, cmap="plasma"):
+    montage =  display_images(outputs, inputs, is_colormap, is_rescale, cmap="plasma")
     im = Image.fromarray(np.uint8(montage*255))
     im.save(filename)
 
