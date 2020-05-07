@@ -22,7 +22,7 @@ def get_model(wt='nyu.h5'):
 	return model
 
 def infer(model, bg_idx, base_path="/content/fg_bg", show_viz=False, zipf=None,
-		batch_size=128):
+		batch_size=128, scale=0):
 	path = f"{base_path}/bg_{bg_idx:02d}/*.jpg"
 	print('\nLoading images from %s' % path)
 	# Input images
@@ -34,7 +34,7 @@ def infer(model, bg_idx, base_path="/content/fg_bg", show_viz=False, zipf=None,
 		batch_idx += 1
 		end = min(len(input_files), start + batch_size)
 
-		inputs = load_images( input_files[start:end] )
+		inputs = load_images( input_files[start:end], scale=scale )
 		print('Batch[{0}]: Loaded ({1}) images of size {2}.'.format(batch_idx,
 			inputs.shape[0], inputs.shape[1:]))
 		# Compute results
@@ -58,7 +58,7 @@ def infer(model, bg_idx, base_path="/content/fg_bg", show_viz=False, zipf=None,
 		
 		if show_viz and batch_idx==1:
 			# Display results
-			viz = display_images(outputs.copy(), inputs.copy(), cmap="gray")
+			viz = display_images(outputs[:16].copy(), inputs[:16].copy(), cmap="gray")
 			plt.figure(figsize=(10,5))
 			plt.axis("off")
 			plt.imshow(viz)
@@ -70,5 +70,5 @@ if __name__ == '__main__':
 	zip_file_name = "fg_bg_depth.zip"
 	print("Creating archive: {:s}".format(zip_file_name))
 	zipf = ZipFile(zip_file_name, mode='a', compression=ZIP_STORED)
-	infer(model, 0, zipf=zipf)
+	infer(model, 0, zipf=zipf, batch_size=512, scale=0)
 	zipf.close()

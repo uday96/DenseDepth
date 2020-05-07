@@ -24,11 +24,16 @@ def scale_up(scale, images):
 
     return np.stack(scaled)
 
-def load_images(image_files):
+def load_images(image_files, scale=0):
+    from skimage.transform import resize
+
     loaded_images = []
     for file in image_files:
-        x = np.clip(np.asarray(Image.open( file ), dtype=float) / 255, 0, 1)
-        loaded_images.append(x)
+        img = np.clip(np.asarray(Image.open( file ), dtype=float) / 255, 0, 1)
+        if scale:
+            output_shape = (scale * img.shape[0], scale * img.shape[1], img.shape[2])
+            img = resize(img, output_shape, order=1, preserve_range=True, mode='reflect', anti_aliasing=True )
+        loaded_images.append(img)
     return np.stack(loaded_images, axis=0)
 
 def to_multichannel(i):
